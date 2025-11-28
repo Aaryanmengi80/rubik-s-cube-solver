@@ -17,31 +17,31 @@ from cube.moves import MoveCommand
 class TestCubeBasics:
     """Test basic Cube functionality."""
     
-    def test_cube_initialization_default(self):
+    def test_cube_initialization_default(self) -> None:
         """Test default cube is solved."""
         cube = Cube()
         assert cube.is_solved()
         assert len(cube.state) == 54
     
-    def test_cube_initialization_with_state(self):
+    def test_cube_initialization_with_state(self) -> None:
         """Test cube initialization with custom state."""
         state = "RWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY"
         cube = Cube(state)
         assert cube.state == state
         assert not cube.is_solved()
     
-    def test_cube_initialization_invalid_length(self):
+    def test_cube_initialization_invalid_length(self) -> None:
         """Test cube rejects invalid state length."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # type: ignore
             Cube("WWWWWWWWW")
     
-    def test_cube_initialization_invalid_chars(self):
+    def test_cube_initialization_invalid_chars(self) -> None:
         """Test cube rejects invalid characters."""
         invalid_state = "X" * 54
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # type: ignore
             Cube(invalid_state)
     
-    def test_cube_copy(self):
+    def test_cube_copy(self) -> None:
         """Test cube copy is independent."""
         cube1 = Cube("RWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY")
         cube2 = cube1.copy()
@@ -53,7 +53,7 @@ class TestCubeBasics:
 class TestCubeRotations:
     """Test face rotations."""
     
-    def test_rotate_face_clockwise(self):
+    def test_rotate_face_clockwise(self) -> None:
         """Test clockwise face rotation."""
         cube = Cube()
         original = cube.get_face(0)  # White face
@@ -67,7 +67,7 @@ class TestCubeRotations:
                     original[8] + original[5] + original[2])
         assert rotated == expected
     
-    def test_rotate_face_counterclockwise_is_inverse(self):
+    def test_rotate_face_counterclockwise_is_inverse(self) -> None:
         """Test that counterclockwise is the inverse of clockwise."""
         cube = Cube()
         original = cube.state
@@ -77,7 +77,7 @@ class TestCubeRotations:
         
         assert cube.state == original
     
-    def test_rotate_face_180_twice_is_identity(self):
+    def test_rotate_face_180_twice_is_identity(self) -> None:
         """Test that two 180-degree rotations restore original state."""
         cube = Cube()
         original = cube.state
@@ -91,7 +91,7 @@ class TestCubeRotations:
 class TestCubeMoves:
     """Test standard cube moves."""
     
-    def test_move_U_cycle(self):
+    def test_move_U_cycle(self) -> None:
         """Test U move cycles through 4 top rows."""
         cube = Cube()
         original = cube.state
@@ -102,7 +102,7 @@ class TestCubeMoves:
         
         assert cube.state == original
     
-    def test_move_U_prime_is_inverse(self):
+    def test_move_U_prime_is_inverse(self) -> None:
         """Test U' is the inverse of U."""
         cube = Cube()
         original = cube.state
@@ -112,7 +112,7 @@ class TestCubeMoves:
         
         assert cube.state == original
     
-    def test_move_U2_same_as_two_U(self):
+    def test_move_U2_same_as_two_U(self) -> None:
         """Test U2 is equivalent to two U moves."""
         cube1 = Cube()
         cube2 = Cube()
@@ -123,7 +123,7 @@ class TestCubeMoves:
         
         assert cube1.state == cube2.state
     
-    def test_all_moves_exist(self):
+    def test_all_moves_exist(self) -> None:
         """Test that all standard moves are implemented."""
         cube = Cube()
         cmd = MoveCommand(cube)
@@ -141,7 +141,7 @@ class TestCubeMoves:
 class TestMoveCommand:
     """Test the MoveCommand command pattern."""
     
-    def test_execute_single_move(self):
+    def test_execute_single_move(self) -> None:
         """Test executing a single move."""
         cube = Cube()
         cmd = MoveCommand(cube)
@@ -150,7 +150,7 @@ class TestMoveCommand:
         cmd.execute('U')
         assert cube.state != original
     
-    def test_execute_sequence(self):
+    def test_execute_sequence(self) -> None:
         """Test executing a move sequence."""
         cube = Cube()
         cmd = MoveCommand(cube)
@@ -160,19 +160,18 @@ class TestMoveCommand:
         assert cube.state != original
         assert len(cmd.get_history()) == 4
     
-    def test_undo_last_move(self):
+    def test_undo_last_move(self) -> None:
         """Test undoing the last move."""
         cube = Cube()
         cmd = MoveCommand(cube)
         
         cmd.execute('U')
-        # Verify state after move (unused variable)
         _ = cube.state
         cmd.undo_last()
         
         assert cube.state == "WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY"
     
-    def test_undo_all_moves(self):
+    def test_undo_all_moves(self) -> None:
         """Test undoing all moves."""
         cube = Cube()
         cmd = MoveCommand(cube)
@@ -183,7 +182,7 @@ class TestMoveCommand:
         assert cube.is_solved()
         assert len(cmd.get_history()) == 0
     
-    def test_get_solution_string(self):
+    def test_get_solution_string(self) -> None:
         """Test getting solution as a string."""
         cube = Cube()
         cmd = MoveCommand(cube)
@@ -197,7 +196,7 @@ class TestMoveCommand:
 class TestCubeEquality:
     """Test cube equality comparison."""
     
-    def test_equal_cubes(self):
+    def test_equal_cubes(self) -> None:
         """Test that identical cubes are equal."""
         state = "RWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY"
         cube1 = Cube(state)
@@ -205,7 +204,7 @@ class TestCubeEquality:
         
         assert cube1 == cube2
     
-    def test_different_cubes_not_equal(self):
+    def test_different_cubes_not_equal(self) -> None:
         """Test that different cubes are not equal."""
         cube1 = Cube("RWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY")
         cube2 = Cube("OWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYY")
@@ -213,5 +212,5 @@ class TestCubeEquality:
         assert cube1 != cube2
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # type: ignore
     pytest.main([__file__, '-v'])
