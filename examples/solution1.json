@@ -1,0 +1,8 @@
+{
+  "moves": [
+    "R"
+  ],
+  "num_moves": 1,
+  "nodes_explored": 42,
+  "solution_string": "R"
+}

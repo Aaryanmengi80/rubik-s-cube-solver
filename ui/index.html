@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rubik's Cube Solver</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .solution-display {
+            background: #f5f5f5;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .moves-display {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+            color: #333;
+            min-height: 60px;
+            line-height: 1.6;
+        }
+
+        .moves-display.empty {
+            color: #999;
+            font-style: italic;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .error-message {
+            background: #ffe0e0;
+            color: #d32f2f;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #d32f2f;
+            display: none;
+        }
+
+        .success-message {
+            background: #e0f5e0;
+            color: #388e3c;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #388e3c;
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            color: #999;
+            margin-top: 30px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎲 Rubik's Cube Solver</h1>
+        <p class="subtitle">Fast algorithms for solving scrambled cubes</p>
+
+        <div class="error-message" id="error-message"></div>
+        <div class="success-message" id="success-message"></div>
+
+        <div class="solution-display" id="solution-display">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading solution...</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn-primary" onclick="loadSolution()">
+                🔄 Load Solution
+            </button>
+            <button class="btn-secondary" onclick="clearDisplay()">
+                ✕ Clear
+            </button>
+        </div>
+
+        <div class="footer">
+            <p>Rubik's Cube Solver v1.0 | IDA* & Kociemba Algorithms</p>
+        </div>
+    </div>
+
+    <script>
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            setTimeout(() => {
+                errorEl.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successEl = document.getElementById('success-message');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+            setTimeout(() => {
+                successEl.style.display = 'none';
+            }, 5000);
+        }
+
+        function formatSolution(data) {
+            let html = '<div class="stat">';
+            html += '<span class="stat-label">Number of Moves:</span>';
+            html += `<span class="stat-value">${data.num_moves || 0}</span>`;
+            html += '</div>';
+
+            if (data.nodes_explored !== undefined) {
+                html += '<div class="stat">';
+                html += '<span class="stat-label">Nodes Explored:</span>';
+                html += `<span class="stat-value">${data.nodes_explored}</span>`;
+                html += '</div>';
+            }
+
+            html += '<div class="stat">';
+            html += '<span class="stat-label">Solution:</span>';
+            html += '</div>';
+
+            const moves = data.moves || [];
+            const movesStr = moves.length > 0 ? moves.join(' ') : 'Cube already solved!';
+            html += `<div class="moves-display ${moves.length === 0 ? 'empty' : ''}">`;
+            html += movesStr;
+            html += '</div>';
+
+            return html;
+        }
+
+        function loadSolution() {
+            const displayEl = document.getElementById('solution-display');
+            displayEl.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading solution...</p></div>';
+
+            fetch('/api/solution')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 404) {
+                        throw new Error('No solution found. Please run the solver first.');
+                    } else {
+                        throw new Error('Failed to load solution');
+                    }
+                })
+                .then(data => {
+                    displayEl.innerHTML = formatSolution(data);
+                    showSuccess('✓ Solution loaded successfully');
+                })
+                .catch(error => {
+                    displayEl.innerHTML = '<p style="color: #999; font-style: italic;">No solution available. Run: python cli/cli.py -s "..." -o solution.json</p>';
+                    showError(error.message);
+                });
+        }
+
+        function clearDisplay() {
+            document.getElementById('solution-display').innerHTML = '';
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('success-message').style.display = 'none';
+        }
+
+        // Load solution on page load
+        window.addEventListener('load', loadSolution);
+    </script>
+</body>
+</html>
