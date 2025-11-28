@@ -19,13 +19,13 @@ from solvers.bfs_solver import BFSSolver
 class TestSolverInterface:
     """Test solver interface compliance."""
     
-    def test_ida_solver_exists(self):
+    def test_ida_solver_exists(self) -> None:
         """Test that IDA* solver can be instantiated."""
         solver = IDASolver()
         assert solver is not None
         assert solver.name == 'IDASolver'
     
-    def test_bfs_solver_exists(self):
+    def test_bfs_solver_exists(self) -> None:
         """Test that BFS solver can be instantiated."""
         solver = BFSSolver()
         assert solver is not None
@@ -34,7 +34,7 @@ class TestSolverInterface:
 class TestSolverOutput:
     """Test that solvers return proper output format."""
     
-    def test_ida_returns_tuple(self):
+    def test_ida_returns_tuple(self) -> None:
         """Test IDA* returns (moves, nodes_explored)."""
         solver = IDASolver()
         cube = Cube()  # Already solved
@@ -44,7 +44,7 @@ class TestSolverOutput:
         assert isinstance(moves, list)
         assert isinstance(nodes, int)
     
-    def test_bfs_returns_tuple(self):
+    def test_bfs_returns_tuple(self) -> None:
         """Test BFS returns (moves, nodes_explored)."""
         solver = BFSSolver()
         cube = Cube()  # Already solved
@@ -58,7 +58,7 @@ class TestSolverOutput:
 class TestSolverBasicCases:
     """Test solvers on simple cases."""
     
-    def test_ida_solves_solved_cube(self):
+    def test_ida_solves_solved_cube(self) -> None:
         """Test IDA* recognizes a solved cube."""
         solver = IDASolver()
         cube = Cube()
@@ -67,7 +67,7 @@ class TestSolverBasicCases:
         
         assert len(moves) == 0
     
-    def test_bfs_solves_solved_cube(self):
+    def test_bfs_solves_solved_cube(self) -> None:
         """Test BFS recognizes a solved cube."""
         solver = BFSSolver()
         cube = Cube()
@@ -76,7 +76,7 @@ class TestSolverBasicCases:
         
         assert len(moves) == 0
     
-    def test_ida_solves_one_move_scramble(self):
+    def test_ida_solves_one_move_scramble(self) -> None:
         """Test IDA* solves a cube scrambled by one move."""
         solver = IDASolver()
         cube = Cube()
@@ -97,7 +97,7 @@ class TestSolverBasicCases:
             cmd.execute(move)
         assert test_cube.is_solved()
     
-    def test_ida_solves_two_move_scramble(self):
+    def test_ida_solves_two_move_scramble(self) -> None:
         """Test IDA* solves a two-move scramble."""
         solver = IDASolver()
         cube = Cube()
@@ -117,7 +117,7 @@ class TestSolverBasicCases:
             cmd.execute(move)
         assert test_cube.is_solved()
     
-    def test_ida_solves_known_pattern(self):
+    def test_ida_solves_known_pattern(self) -> None:
         """Test IDA* solves a known simple pattern."""
         solver = IDASolver()
         cube = Cube()
@@ -141,7 +141,7 @@ class TestSolverBasicCases:
 class TestSolverDifferentHeuristics:
     """Test IDA* with different heuristics."""
     
-    def test_misplaced_heuristic(self):
+    def test_misplaced_heuristic(self) -> None:
         """Test IDA* with misplaced heuristic."""
         solver = IDASolver(heuristic='misplaced')
         cube = Cube()
@@ -154,7 +154,7 @@ class TestSolverDifferentHeuristics:
         assert len(moves) > 0
         assert nodes > 0
     
-    def test_wrong_face_heuristic(self):
+    def test_wrong_face_heuristic(self) -> None:
         """Test IDA* with wrong_face heuristic."""
         solver = IDASolver(heuristic='wrong_face')
         cube = Cube()
@@ -167,11 +167,11 @@ class TestSolverDifferentHeuristics:
         assert len(moves) > 0
         assert nodes > 0
     
-    def test_invalid_heuristic_raises(self):
+    def test_invalid_heuristic_raises(self) -> None:
         """Test that invalid heuristic raises error."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # type: ignore
             IDASolver(heuristic='invalid')
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # type: ignore
     pytest.main([__file__, '-v'])
