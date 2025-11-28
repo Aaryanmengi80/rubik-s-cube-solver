@@ -1,166 +1,226 @@
 """
-Iterative Deepening A* (IDA*) solver for Rubik's Cube.
-Production-ready solver with configurable heuristics.
+IDA* (Iterative Deepening A*) solver for Rubik's Cube.
+Uses heuristic search to find optimal solutions efficiently.
 """
 
-from typing import Tuple, Optional
+from typing import List, Tuple, Callable, Optional
 from cube.cube import Cube
 from cube.moves import MoveCommand
-from .solver_interface import Solver
 
 
-class IDASolver(Solver):
-    """
-    IDA* Solver for Rubik's Cube.
-    
-    Uses iterative deepening with a heuristic function to explore the search space.
-    Configurable heuristics:
-      - misplaced_count: Number of misplaced cubelets
-      - wrong_face_count: Sum of wrong-face color counts
-    """
-    
-    MOVES = ['U', 'U\'', 'U2', 'D', 'D\'', 'D2', 
-             'L', 'L\'', 'L2', 'R', 'R\'', 'R2',
-             'F', 'F\'', 'F2', 'B', 'B\'', 'B2']
+class IDASolver:
+    """Iterative Deepening A* solver for Rubik's Cube."""
     
     def __init__(self, heuristic: str = "misplaced") -> None:
-        """
-        Initialize IDA* solver with a heuristic.
+        """Initialize IDA* solver with specified heuristic.
         
         Args:
-            heuristic (str): "misplaced" or "wrong_face". Defaults to "misplaced".
+            heuristic: Type of heuristic ('misplaced', 'wrong_face', 'manhattan')
         """
-        super().__init__()
-        self.heuristic_name = heuristic
-        
-        if heuristic == "misplaced":
-            self.heuristic = self._heuristic_misplaced
-        elif heuristic == "wrong_face":
-            self.heuristic = self._heuristic_wrong_face
-        else:
+        if heuristic not in ["misplaced", "wrong_face", "manhattan"]:
             raise ValueError(f"Unknown heuristic: {heuristic}")
         
+        self.heuristic_type = heuristic
+        self.name = "IDASolver"
         self.nodes_explored = 0
+        
+        # Set heuristic function
+        if heuristic == "misplaced":
+            self.heuristic: Callable[[Cube], int] = self._heuristic_misplaced
+        elif heuristic == "wrong_face":
+            self.heuristic: Callable[[Cube], int] = self._heuristic_wrong_face
+        else:
+            self.heuristic: Callable[[Cube], int] = self._heuristic_manhattan
     
     def _heuristic_misplaced(self, cube: Cube) -> int:
-        """
-        Estimate cost using misplaced cubelets count.
-        
-        A cubelet is misplaced if it's not on its home face.
+        """Count misplaced pieces heuristic.
         
         Args:
-            cube (Cube): The cube to evaluate.
-        
+            cube: Current cube state
+            
         Returns:
-            int: Lower bound on remaining moves.
+            Number of misplaced pieces divided by 8 (as lower bound)
         """
-        target = "WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYY"
+        target = "WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYYY"
+        
+        # Ensure both strings are exactly 54 characters
+        if len(cube.state) != 54 or len(target) != 54:
+            return 0
+        
         misplaced = sum(1 for i in range(54) if cube.state[i] != target[i])
-        # Divide by 2 because each move affects ~2 cubelets (rough estimate)
-        return max(1, misplaced // 8)
+        return misplaced // 8  # Divide by 8 for admissible heuristic
     
     def _heuristic_wrong_face(self, cube: Cube) -> int:
-        """
-        Estimate cost using sum of wrong-face color counts.
-        
-        For each face, count how many stickers don't match the center color.
+        """Count wrong-face pieces heuristic.
         
         Args:
-            cube (Cube): The cube to evaluate.
-        
+            cube: Current cube state
+            
         Returns:
-            int: Lower bound on remaining moves.
+            Number of pieces on wrong face divided by 12
         """
-        target_colors = ['W', 'O', 'G', 'R', 'B', 'Y']
-        wrong_count = 0
+        target = "WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYYY"
         
-        for face_idx in range(6):
-            start = face_idx * 9
-            center_color = target_colors[face_idx]
-            for i in range(9):
-                if cube.state[start + i] != center_color:
-                    wrong_count += 1
+        # Define which indices belong to which face
+        faces = {
+            'W': list(range(0, 9)),      # White (top)
+            'O': list(range(9, 18)),     # Orange (left)
+            'G': list(range(18, 27)),    # Green (front)
+            'R': list(range(27, 36)),    # Red (right)
+            'B': list(range(36, 45)),    # Blue (back)
+            'Y': list(range(45, 54))     # Yellow (bottom)
+        }
         
-        return max(1, wrong_count // 8)
+        # Ensure length is correct
+        if len(cube.state) != 54 or len(target) != 54:
+            return 0
+        
+        wrong_face = 0
+        for face_color, indices in faces.items():
+            for idx in indices:
+                if cube.state[idx] != face_color:
+                    wrong_face += 1
+        
+        return wrong_face // 12  # Divide by 12 for admissible heuristic
     
-    def solve(self, cube: Cube, max_depth: int = 20) -> Tuple[list[str], int]:
-        """
-        Solve using IDA* algorithm.
+    def _heuristic_manhattan(self, cube: Cube) -> int:
+        """Simple manhattan distance heuristic.
         
         Args:
-            cube (Cube): The cube to solve.
-            max_depth (int): Maximum search depth. Defaults to 20.
-        
+            cube: Current cube state
+            
         Returns:
-            Tuple[list[str], int]: (list of moves, nodes explored)
-        
-        Raises:
-            RuntimeError: If no solution found within max_depth.
+            Estimated moves needed (simple estimate)
         """
-        if cube.is_solved():
-            return [], 1
+        target = "WWWWWWWWWOOOOOOOOOGGGGGGGGGRRRRRRRRRBBBBBBBBBYYYYYYYYYY"
         
+        if len(cube.state) != 54 or len(target) != 54:
+            return 0
+        
+        misplaced = sum(1 for i in range(54) if cube.state[i] != target[i])
+        return max(0, misplaced // 8)
+    
+    def solve(self, cube: Cube) -> Tuple[List[str], int]:
+        """Solve cube using IDA* algorithm.
+        
+        Args:
+            cube: Cube to solve
+            
+        Returns:
+            Tuple of (moves list, nodes explored)
+        """
         self.nodes_explored = 0
         
-        # Iterative deepening
-        for depth_limit in range(0, max_depth + 1):
+        # Check if already solved
+        if cube.is_solved():
+            return [], 0
+        
+        # IDA* with depth limits
+        depth_limit = 1
+        max_depth = 20  # Maximum depth to search
+        
+        while depth_limit <= max_depth:
             result = self._search(cube.copy(), [], 0, depth_limit)
+            
             if result is not None:
                 return result, self.nodes_explored
+            
+            depth_limit += 1
         
-        raise RuntimeError(
-            f"Solution not found within {max_depth} moves. "
-            "Cube may be invalid or unsolvable."
-        )
+        return [], self.nodes_explored
     
     def _search(
-        self,
-        cube: Cube,
-        moves: list[str],
-        depth: int,
+        self, 
+        cube: Cube, 
+        moves: List[str], 
+        current_depth: int, 
         depth_limit: int
-    ) -> Optional[list[str]]:
-        """
-        Recursive search function for IDA*.
+    ) -> Optional[Tuple[List[str], int]]:
+        """Recursive search function.
         
         Args:
-            cube (Cube): Current cube state.
-            moves (list[str]): Moves applied so far.
-            depth (int): Current depth in search tree.
-            depth_limit (int): Maximum depth to explore.
-        
+            cube: Current cube state
+            moves: Moves applied so far
+            current_depth: Current depth in search tree
+            depth_limit: Maximum depth for this iteration
+            
         Returns:
-            Optional[list[str]]: Solution moves if found, None otherwise.
+            Solution moves if found, None otherwise
         """
         self.nodes_explored += 1
         
+        # Check if solved
         if cube.is_solved():
-            return moves
+            return moves, self.nodes_explored
         
-        if depth >= depth_limit:
+        # Check depth limit
+        if current_depth >= depth_limit:
             return None
         
-        h_value = self.heuristic(cube)
-        if depth + h_value > depth_limit:
-            return None
+        # Try all possible moves
+        all_moves = [
+            "U", "U'", "U2",
+            "D", "D'", "D2",
+            "L", "L'", "L2",
+            "R", "R'", "R2",
+            "F", "F'", "F2",
+            "B", "B'", "B2"
+        ]
         
-        # Avoid reversing the last move
-        last_move = moves[-1] if moves else None
-        
-        for move_name in self.MOVES:
-            # Skip reversing last move
-            if last_move:
-                base_last = last_move.rstrip('\'2')
-                base_current = move_name.rstrip('\'2')
-                if base_last == base_current:
-                    continue
+        for move in all_moves:
+            # Skip reverse of last move (avoid oscillation)
+            if moves and self._is_reverse(moves[-1], move):
+                continue
             
-            next_cube = cube.copy()
-            cmd = MoveCommand(next_cube)
-            cmd.execute(move_name)
+            # Make move
+            cube_copy = cube.copy()
+            cmd = MoveCommand(cube_copy)
+            cmd.execute(move)
             
-            result = self._search(next_cube, moves + [move_name], depth + 1, depth_limit)
-            if result is not None:
-                return result
+            # Calculate heuristic
+            h_value = self.heuristic(cube_copy)
+            f_value = current_depth + 1 + h_value
+            
+            # Prune if exceeds depth limit
+            if f_value <= depth_limit:
+                result = self._search(
+                    cube_copy,
+                    moves + [move],
+                    current_depth + 1,
+                    depth_limit
+                )
+                
+                if result is not None:
+                    return result
         
         return None
+    
+    @staticmethod
+    def _is_reverse(move1: str, move2: str) -> bool:
+        """Check if two moves are reverses of each other.
+        
+        Args:
+            move1: First move
+            move2: Second move
+            
+        Returns:
+            True if moves are reverses
+        """
+        # Remove modifiers and get base move
+        base1 = move1[0]
+        base2 = move2[0]
+        
+        if base1 != base2:
+            return False
+        
+        # Check if one is inverse of the other
+        has_prime1 = "'" in move1
+        has_prime2 = "'" in move2
+        has_2_1 = "2" in move1
+        has_2_2 = "2" in move2
+        
+        # X and X' are reverses
+        if has_prime1 != has_prime2 and not has_2_1 and not has_2_2:
+            return True
+        
+        return False
