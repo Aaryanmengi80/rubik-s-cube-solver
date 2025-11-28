@@ -123,7 +123,8 @@ class IDASolver:
             result = self._search(cube.copy(), [], 0, depth_limit)
             
             if result is not None:
-                return result, self.nodes_explored
+                moves = result
+                return moves, self.nodes_explored
             
             depth_limit += 1
         
@@ -135,7 +136,7 @@ class IDASolver:
         moves: List[str], 
         current_depth: int, 
         depth_limit: int
-    ) -> Optional[Tuple[List[str], int]]:
+    ) -> Optional[List[str]]:
         """Recursive search function.
         
         Args:
@@ -151,7 +152,7 @@ class IDASolver:
         
         # Check if solved
         if cube.is_solved():
-            return moves, self.nodes_explored
+            return moves
         
         # Check depth limit
         if current_depth >= depth_limit:
@@ -172,26 +173,30 @@ class IDASolver:
             if moves and self._is_reverse(moves[-1], move):
                 continue
             
-            # Make move
-            cube_copy = cube.copy()
-            cmd = MoveCommand(cube_copy)
-            cmd.execute(move)
-            
-            # Calculate heuristic
-            h_value = self.heuristic(cube_copy)
-            f_value = current_depth + 1 + h_value
-            
-            # Prune if exceeds depth limit
-            if f_value <= depth_limit:
-                result = self._search(
-                    cube_copy,
-                    moves + [move],
-                    current_depth + 1,
-                    depth_limit
-                )
+            # Make move using MoveCommand
+            try:
+                cube_copy = cube.copy()
+                cmd = MoveCommand(cube_copy)
+                cmd.execute(move)
                 
-                if result is not None:
-                    return result
+                # Calculate heuristic
+                h_value = self.heuristic(cube_copy)
+                f_value = current_depth + 1 + h_value
+                
+                # Prune if exceeds depth limit
+                if f_value <= depth_limit:
+                    result = self._search(
+                        cube_copy,
+                        moves + [move],
+                        current_depth + 1,
+                        depth_limit
+                    )
+                    
+                    if result is not None:
+                        return result
+            except Exception:
+                # Skip invalid moves
+                continue
         
         return None
     
